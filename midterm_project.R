@@ -210,7 +210,7 @@ F-statistic:  3052 on 1 and 1998 DF,  p-value: < 2.2e-16
 #iii: The R^2 measures the variance in the dependent variable, predicted by the independent variable. 
 #.    Here, the R^2 of 0.6043 denotes if the independent variable (beds) changes by 1 value, the dependent variable (expenses), changes by 0.6043 on average across the population of 2000 hospitals.  
 
-#iv: 0.00688 (dv) and 2e-16(iv) are the p-values for each variable, with <2.2e-16 being the average p-value. 
+#iv: 0.00688 (dv) and 2e-16(iv) are the p-values for each variable, with <2.2e-16 being the combined p-value. 
 #    While there are three p-values reported, only one is of importance, the p-value of the independent variable 2e-16. 
 #    The p-value indicates statistical significance between the number of beds and the expenses of the individual hospitals as it is close to zero and far from 0.05. 
 
@@ -225,27 +225,26 @@ F-statistic:  3052 on 1 and 1998 DF,  p-value: < 2.2e-16
 lm_model_2 <- lm(Total_Expense ~ Beds + Admissions, hospitals)
 summary(lm_model_2)
 Residuals:
-    Min      1Q  Median      3Q     Max 
+  Min      1Q  Median      3Q     Max 
 -956819  -46542     901   18079 2953802 
 
 Coefficients:
-              Estimate Std. Error t value Pr(>|t|)    
+  Estimate Std. Error t value Pr(>|t|)    
 (Intercept) -1.433e+04  4.816e+03  -2.975  0.00296 ** 
-Beds         2.244e+02  3.107e+01   7.222 7.25e-13 ***
-Admissions   2.147e+01  6.656e-01  32.247  < 2e-16 ***
----
-Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+  Beds         2.244e+02  3.107e+01   7.222 7.25e-13 ***
+  Admissions   2.147e+01  6.656e-01  32.247  < 2e-16 ***
+  ---
+  Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 
 Residual standard error: 165700 on 1997 degrees of freedom
 Multiple R-squared:  0.7398,	Adjusted R-squared:  0.7396 
 F-statistic:  2839 on 2 and 1997 DF,  p-value: < 2.2e-16
-
 #ii: The value of R^2 is 0.7398
 
 #iii/v: The R^2 measures the variance in the dependent variable, predicted by the independent variables. 
 #     Here, the R^2 of 0.7398 denotes if the independent variables (beds and admissions) changes by 1 value, the dependent variable (expenses), changes by 0.7398 on average across the population of 2000 hospitals.
 
-#iv/v: 0.00296(dv), 7.25e-13(iv1) and 2e-16(iv2) are the p-values for each variable, with <2.2e-16 being the average p-value. 
+#iv/v: 0.00296(dv), 7.25e-13(iv1) and 2e-16(iv2) are the p-values for each variable, with <2.2e-16 being the combined p-value. 
 #    While there are four p-values reported, only one is of importance, the p-values of the independent variables 7.25e-13 and 2e-16. 
 #    The p-values indicates statistical significance between the number of beds and the expenses of the individual hospitals and the statistical significance between the number of admissions and the expenses 
 #    of each hospital as they are close to zero and far from 0.05. 
@@ -257,3 +256,4 @@ F-statistic:  2839 on 2 and 1997 DF,  p-value: < 2.2e-16
 #  to determine what is the most profitable, but are never given anything about revenue. Yes we are given a specific cost measure for payroll expenses, but that isn't enough, we need revenue. 
 # -As for how I arrived at my conclusion, I figured lower beds and admissions have proven to have a strong relation to lower expenses, theoretically reducing total expenses in the hospitals, not being able to account 
 #  for revenue. 
+
