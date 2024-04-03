@@ -224,6 +224,21 @@ F-statistic:  3052 on 1 and 1998 DF,  p-value: < 2.2e-16
 #model: 
 lm_model_2 <- lm(Total_Expense ~ Beds + Admissions, hospitals)
 summary(lm_model_2)
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-956819  -46542     901   18079 2953802 
+
+Coefficients:
+              Estimate Std. Error t value Pr(>|t|)    
+(Intercept) -1.433e+04  4.816e+03  -2.975  0.00296 ** 
+Beds         2.244e+02  3.107e+01   7.222 7.25e-13 ***
+Admissions   2.147e+01  6.656e-01  32.247  < 2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 165700 on 1997 degrees of freedom
+Multiple R-squared:  0.7398,	Adjusted R-squared:  0.7396 
+F-statistic:  2839 on 2 and 1997 DF,  p-value: < 2.2e-16
 
 #ii: The value of R^2 is 0.7398
 
