@@ -34,7 +34,7 @@ hospitals <-read_csv("hospitals.csv")
 
 #a) How big is the dataset?
 dim(hospitals)
-#2000   18
+2000   18
 #the dim() function shows us that the "hospitals" date frame has 2000 rows and 18 columns. 
 
 #b) What are the names of the columns?
@@ -78,14 +78,15 @@ FALSE
 #The result of FALSE from the in.na fucntion shows us there are no missing values in the data frame. 
 
 #e) Which hospital has the lowest number of beds? 
-which.min(hospitals$Beds)
-1064
-#By using the which.min function, we know hospital number 1064 has the lowest number of beds. 
+hospitals%>%slice_min(Beds)
+1064 and 1751 are tied at 3 beds
 
 #f) Which hospital has the lowest expense?
-which.min(hospitals$"Total Expense")
+#Note that the column name "Total Expense" had to be changed to 
+hospitals <- hospitals %>%
+  rename(Total_Expense = `Total Expense`)
+hospitals%>%slice_min(Total_Expense)
 826
-#By using the which.min function, we know hospital number 826 has the lowest total expenses.
 
 #g) How many hospitals deliver babies?
 sum(hospitals$`Births or Not` > 0)
@@ -94,11 +95,6 @@ sum(hospitals$`Births or Not` > 0)
 #we know the total number of hospitals that deliver babies is 1112. 
 
 #h)Using ggplot, scatterplot number of beds vs total expense
-#Note that the column name "Total Expense" had to be changed to 
-#"Total_Expense" for the ggplots to run. 
-hospitals <- hospitals %>%
-  rename(Total_Expense = `Total Expense`)
-
 ggplot(hospitals, aes(x = Beds, y = Total_Expense)) +
   geom_point()+ 
   labs(x = "Number of Beds", y = "Total Expense")
@@ -256,4 +252,5 @@ F-statistic:  2839 on 2 and 1997 DF,  p-value: < 2.2e-16
 #  to determine what is the most profitable, but are never given anything about revenue. Yes we are given a specific cost measure for payroll expenses, but that isn't enough, we need revenue. 
 # -As for how I arrived at my conclusion, I figured lower beds and admissions have proven to have a strong relation to lower expenses, theoretically reducing total expenses in the hospitals, not being able to account 
 #  for revenue. 
+ 
 
