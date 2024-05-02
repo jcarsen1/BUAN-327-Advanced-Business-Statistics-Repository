@@ -1,0 +1,238 @@
+library(dplyr)
+library(tidyverse)
+library(sf)
+library(viridis)
+library(maps)
+
+unmodified_nursing = read.csv("2021_CostReport.csv")
+nursing = read.csv("2021_CostReport.csv")
+provider = read.csv("Providerinfo_2021.csv")
+colnames(nursing)
+#_____________________________________________________________________________________________________________________________________________________
+#Calculations Section
+
+# Calculate the average revenue per nursing home.
+nursing %>% summarise(mean(Gross.Revenue, na.rm=TRUE))
+#Average revenue = $11,465,326
+
+#Calculate the average net income per nursing home.
+nursing %>% summarise(mean(Net.Income, na.rm=TRUE))
+#Average net income = $258,194.30
+
+#Calculate the profit margin per county. 
+# Assuming your dataframe is called "nursing"
+nursing$Profit.Margin <- nursing$Net.Income / nursing$Gross.Revenue
+avg_profit_margin_per_county <- nursing %>%
+  group_by(County) %>%
+  summarise(Profit.Margin = mean(Profit.Margin, na.rm = TRUE))
+cleaned_avg_profit_margin_per_county <- na.omit(avg_profit_margin_per_county)
+print(cleaned_avg_profit_margin_per_county)
+#results are too long to put into this file, they can be viewed on RStudio's console. 
+#Result are in percentage form, rounded to the nearest thousandth. 
+
+#Find the top 10 counties with the highest profit 
+top_10_profitable_counties <- cleaned_avg_profit_margin_per_county %>%
+  arrange(desc(Profit.Margin)) %>%
+  head(10)
+print(top_10_profitable_counties)
+#County            Profit.Margin
+#<chr>                     <dbl>
+#1 ST. HELENA PARISH        2.21 
+#2 AMHERST                  0.615
+#3 HILLSDALE.               0.506
+#4 SAN FRANCISCO            0.479
+#5 HOKE                     0.473
+#6 NEW HANOVER              0.471
+#7 MC NAIRY                 0.441
+#8 CALCASIEU                0.436
+#9 TREUTLEN                 0.427
+#10 ALAMEDA                 0.422
+        
+
+# Find the counties with the lowest number of beds available
+nursing_counties_beds <- nursing %>% select(County, `Number.of.Beds`)
+counties_lowest_beds <- nursing_counties_beds %>% arrange(Number.of.Beds) %>% head()
+counties_lowest_beds
+#County            Number.of.Beds
+#1 CLACKAMAS              6
+#2 MIDDLESEX             12
+#3 OUTAGAMIE             12
+#4     GLENN             12
+#5   GENESEE             12
+#6  OKMULGEE             13
+
+#______________________________________________________________________________________________________________________________________________________
+#Mapping and Graphing Section 
+
+#Create 2 maps to show which counties could be better for investing in nursing homes.
+
+#Map 1: Beds per county
+# Assume 'bed_data' is your dataset loaded with columns 'County' and 'Number_of_Beds'
+bed_data <- read.csv("2021_CostReport.csv")  # Update path to your dataset
+# Load county map data
+counties <- map_data("county")
+# Prepare the data: clean and aggregate
+bed_data <- bed_data %>%
+  mutate(County = tolower(gsub(" county", "", County))) %>%
+  group_by(County) %>%
+  summarise(Total_Beds = sum(Number.of.Beds, na.rm = TRUE))
+# Prepare the map data: merge and clean
+counties <- counties %>%
+  mutate(subregion = tolower(subregion)) %>%
+  left_join(bed_data, by = c("subregion" = "County"))
+# Plot the map
+ggplot(data = counties, aes(x = long, y = lat, group = group, fill = Total_Beds)) +
+  geom_polygon(color = "white") +
+  coord_quickmap() +
+  scale_fill_viridis_c(option = "plasma", name = "Total Beds") +
+  labs(title = "Total Number of Beds by County") +
+  theme_minimal()   
+
+
+#Map 2: Profit Margin Across the Country 
+# Assume 'profit_map_data' is your dataset loaded with columns "County" and "Profit Margin" 
+profit_map_data <- read.csv("2021_CostReport.csv")
+# Load county map data
+counties <- map_data("county")
+# Prepare the data: clean and aggregate
+profit_map_data <- profit_map_data %>%
+  mutate(County = tolower(gsub(" county", "", County))) %>%
+  group_by(County) %>%
+  summarise(Profit.Margin = mean(Net.Income / Gross.Revenue, na.rm = TRUE) * 100) # Profit Margin as a percentage
+# Prepare the map data: merge and clean
+counties <- counties %>%
+  mutate(subregion = tolower(subregion)) %>%
+  left_join(profit_map_data, by = c("subregion" = "County"))
+# Plot the map
+ggplot(data = counties, aes(x = long, y = lat, group = group, fill = Profit.Margin)) +
+  geom_polygon(color = "white") +
+  coord_quickmap() +
+  scale_fill_viridis_c(option = "plasma", name = "Profit Margin (%)") + # Change the label to show percentage
+  labs(title = "Profit Margin by County") +
+  theme_minimal()
+
+
+# Box Plot: Relation between length of stay and avg. rating 
+provider<- provider %>%
+  mutate(Federal.Provider.Number = as.numeric(Federal.Provider.Number), na.rm =TRUE)
+df_cleaned <- na.omit(provider)
+joined_df <- full_join(nursing, provider, by = c("Provider.CCN" = "Federal.Provider.Number"))
+cleaned_df <- joined_df%>% 
+  filter(!is.na(SNF.Average.Length.of.Stay.Total), !is.nan(SNF.Average.Length.of.Stay.Total)) %>%
+  filter(!is.na(Overall.Rating), !is.nan(Overall.Rating))
+
+Q1<- quantile(cleaned_df$SNF.Average.Length.of.Stay.Total, 0.25, na.rm = TRUE)
+Q3<- quantile(cleaned_df$SNF.Average.Length.of.Stay.Total, 0.75, na.rm = TRUE)
+IQR<- Q3-Q1
+lower_bound <- Q1 - 1.5 * IQR
+upper_bound <- Q3 + 1.5 * IQR
+
+filtered_df<- cleaned_df%>% 
+  filter(SNF.Average.Length.of.Stay.Total >= lower_bound, SNF.Average.Length.of.Stay.Total <= upper_bound)
+filtered_df$Overall.Rating <- factor(filtered_df$Overall.Rating, levels = c("1", "2", "3", "4", "5"))
+
+ggplot(filtered_df, aes(x = Overall.Rating, y = SNF.Average.Length.of.Stay.Total)) +
+  geom_boxplot() + 
+  scale_x_discrete("Rating") + 
+  labs(x = "Rating", y = "Average Length of Stay (days)", title = "Distribution of Length of Stay by Nursing Home Rating") +
+  theme_minimal()  
+
+
+
+
+
+# Pie Chart: Show the proportions of the different types of nursing homes
+#Assigning names to each numerical code value in the nursing data set. Names attained from provided data dictionary 
+convert_control <- function(value) {
+  case_when(
+    value == 1 ~ "Voluntary Nonprofit-Church",
+    value == 2 ~ "Voluntary Nonprofit-Other",
+    value == 3 ~ "Proprietary-Individual",
+    value == 4 ~ "Proprietary-Corporation",
+    value == 5 ~ "Proprietary-Partnership",
+    value == 6 ~ "Proprietary-Other",
+    value == 7 ~ "Governmental-Federal",
+    value == 8 ~ "Governmental-City-County",
+    value == 9 ~ "Governmental-County",
+    value == 10 ~ "Governmental-State",
+    value == 11 ~ "Governmental-Facility District",
+    value == 12 ~ "Governmental-City",
+    value == 13 ~ "Governmental-Other",
+    TRUE ~ as.character(value)
+  )
+  }
+#Establishes the changes in the nursing data frame
+nursing$Type.of.Control <- convert_control(nursing$Type.of.Control)
+head(nursing$Type.of.Control)
+#Creates a new table to show the counts of each type of control. This makes creating the pie chart simpler
+control_counts <- table(nursing$Type.of.Control)
+control_df <- data.frame(Control_Type = names(control_counts),
+                         Count = as.numeric(control_counts))
+#Plot pie chart
+ggplot(control_df, aes(x = "", y = Count, fill = Control_Type)) +
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar("y", start = 0) +
+  labs(title = "Proportions of Nursing Homes by Type of Control",
+       fill = "Type of Control") +
+  theme_void() +
+  scale_fill_discrete(name = "Type of Control")
+
+#___________________________________________________________________________________________________________________________
+#Analysis Section 
+
+#Hypothesis test ANOVA comparing the revenues in three different states (NY, NJ, CT)
+# Subset data for New York, New Jersey, and Connecticut
+subset_data <- nursing %>%
+  filter(State.Code %in% c("NY", "NJ", "CT"))
+# Conduct ANOVA
+anova_result <- aov(Gross.Revenue ~ State.Code, data = subset_data)
+# Summary of ANOVA
+summary(anova_result)
+
+#.              Df  Sum Sq   Mean Sq     F value Pr(>F)    
+#State.Code     2 3.938e+16 1.969e+16   69.89 <2e-16 ***
+#Residuals   1123 3.164e+17 2.817e+14                   
+#---
+#  Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+#20 observations deleted due to missingness
+
+#Explanation: At least one of the states has a mean revenue which is significantly different compared to the others, 
+#this is known due to the p-value, well under 0.05, indicating statistical significance
+
+#Linear Regression Model to find the most signigficant factor impacting nursing home performance
+Q1_n<- quantile(nursing$Profit.Margin, 0.25, na.rm = TRUE)
+Q3_n<- quantile(nursing$Profit.Margin, 0.75, na.rm = TRUE)
+IQRn<- Q3_n-Q1_n
+lower_bound_n <- Q1_n - 1.5 * IQRn
+upper_bound_n <- Q3_n + 1.5 * IQRn
+filtered_nursing<- nursing%>% 
+  filter(Profit.Margin >= lower_bound_n, Profit.Margin <= upper_bound_n)
+
+
+model_filtered <- lm(Profit.Margin ~ Total.fund.balances+ Net.Income.from.service.to.patients, data = filtered_nursing)
+summary(model_filtered)
+
+
+#Residuals:
+#  Min       1Q   Median       3Q      Max 
+#-16.6009  -0.0688   0.0094   0.0818  16.5458 
+#Coefficients:
+#  Estimate Std. Error t value Pr(>|t|)    
+#(Intercept)                         1.248e-02  2.790e-03   4.471 7.83e-06 ***
+#  Total.fund.balances                 1.658e-09  8.315e-11  19.942  < 2e-16 ***
+#  Net.Income.from.service.to.patients 7.515e-09  6.083e-10  12.354  < 2e-16 ***
+#  ---
+#  Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+#Residual standard error: 0.3246 on 14772 degrees of freedom
+#(28 observations deleted due to missingness)
+#Multiple R-squared:  0.03543,	Adjusted R-squared:  0.0353 
+#F-statistic: 271.3 on 2 and 14772 DF,  p-value: < 2.2e-16
+
+
+
+
+
+
+
+
